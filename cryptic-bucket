@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# (c) 2021 bwmabe
+# FILENAME: cryptic-bucket
+
+function print_usage {
+	echo "USAGE: cryptic-bucket [COMMAND] [OPTIONS]"
+	echo "	create BUCKET_NAME SIZE [FS_TYPE] : Makes a bucket"
+	echo "	mount BUCKET_NAME MOUNTPOINT : Mounts a bucket"
+	echo "	unmount BUCKET_NAME          : unmounts a bucket"
+	echo "	list                         : Lists buckets"
+	echo "	help                         : prints this"
+	exit $1
+}	
+
+function cb_create {
+	name=$1
+	size=$2
+	fs_type=$3
+
+	echo $name $size $fs_type	
+}
+
+function cb_mount {
+	echo ""
+}
+
+function cb_unmount {
+	echo ""
+}
+
+function cb_list {
+	echo ""
+}
+
+# The 1st argument passed should be the command
+cmd=$1
+
+# Shift to pop the first arg, the command. Everything after should be options
+shift
+
+case $cmd in
+
+	help | -h | --help)
+		print_usage 0
+		;;
+	create | -c | --create)
+		cb_create "$@"
+		;;
+	*)
+		print_usage 1
+		;;
+esac
+
+# vi:syntax=sh
