@@ -18,10 +18,30 @@ function cb_create {
 	fs_type=$3
 
 	echo $name $size $fs_type	
+
+	echo "Creating key"
+	dd if=/dev/urandom of=$name.key bs=1024 count=4
+		
+	echo "Creating container"
+	dd if=/dev/zero of=$name.img bs=1 seek=$size count=0
+	sudo cryptsetup luksFormat $name.img $name.key
+
+	echo "Creating filesystem on container"
+	sudo cryptsetup luksOpen $name.img $name --key-file $name.key
+	sudo mkfs.$fs_type /dev/mapper/$name
+
+	echo "Encryping key"
+	openssl aes-256-cbc -pbkdf2 -in $name.key -out $name.key.enc
+
+	echo "Deleting unencrypted key"
+	rm $name.key
 }
 
 function cb_mount {
-	echo ""
+	name=$1
+	mount_point=$2
+
+	echo $name $mount_point
 }
 
 function cb_unmount {
