@@ -39,7 +39,7 @@ It uses `dd` and `/dev/urandom` to generate some random data to use as a key; pa
 ```
 dd + /dev/urandom -> keyfile -+-> gpg -> encrpted_keyfile
                               |
-							  + Bucket gets locked here!
+                              + Bucket gets locked here!
 ```
 
 *how do you even lock a bucket? gah, this is computers, it doesn't have to make sense*
