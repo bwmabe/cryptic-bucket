@@ -7,6 +7,19 @@ Just a fancy name for a shell script wrapper around creating and mounting LUKS c
 
 I can never remember the process, so I thought I'd make a shell script that remembers it for me and publish it on the internet in case it helps someone else out.
 
+### Some Details
+* Keys
+	- Created by read 2KB of random data from `/dev/urandom` and then base64 encoding it
+	- The encoding is done to remove any and all non-text characters 
+	- OpenSSL with `aes-256-cbc pbkdf2` encryption is used to encrypt the keys
+	- Encryption only occurs *after* it is used to lock the container
+	- Decryption only occurs immediately *before* it is used to unlock the container
+	- **Keys are only ever decrypted in memory**
+* Containers
+	- Locked with keys generated from random data
+	- Managed with LUKS and cryptsetup
+	- Currently hardcoded to use the `ext4` filesystem for implementation simplicity
+
 ## Usage
 
 Make a bucket:
