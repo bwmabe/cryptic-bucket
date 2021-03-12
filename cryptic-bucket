@@ -65,7 +65,6 @@ function cb_mount {
 	name=$1
 	mount_point="${2/#\~/$HOME}"
 
-	echo $name $mount_point
 	$enc -d -in $name.key.enc | sudo cryptsetup luksOpen $name.img $name
 	sudo mount -t ext4 /dev/mapper/$name $mount_point
 }
@@ -82,7 +81,16 @@ function cb_unmount {
 function cb_list {
 	# Should list opened buckets, available buckets, and mounted buckets
 	# available is defined as unmounted AND closed
-	echo ""
+	echo "Mounted and/or Opened:"
+	echo "Name | Mountpoint"
+	lsblk -P -a -i -o "NAME,MOUNTPOINT,TYPE" \
+		| grep crypt \
+		| sed 's/[A-Z]*=//g;s/"//g' \
+		| awk '{print $1 " --> " $2}'
+
+	echo""
+
+	echo "Available:"
 }
 
 # The 1st argument passed should be the command
@@ -105,6 +113,9 @@ case $cmd in
 		;;
 	unmount | -u | --unmount | umount | --umount)
 		cb_unmount "$@"
+		;;
+	list | -l | --list)
+		cb_list
 		;;
 	version | --version)
 		print_version
