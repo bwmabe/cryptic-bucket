@@ -2,8 +2,10 @@
 # (c) 2021 bwmabe
 # FILENAME: cryptic-bucket
 
+# Openssl command; saved as a variable to type it less often
 enc="sudo openssl aes-256-cbc -pbkdf2 "
 
+# Prints the usage either on help or an invalid command
 function print_usage {
 	echo "USAGE: cryptic-bucket [COMMAND] [OPTIONS]"
 	echo "	create BUCKET_NAME SIZE        : Makes a bucket"
@@ -14,24 +16,28 @@ function print_usage {
 	exit $1
 }	
 
+# Prints version and copyright info
+function print_version {
+	echo "cryptic-bucket Version 0.1a"
+	echo "This program is Free Software distributed under the MIT License"
+	echo "(c) 2021 bwmabe"
+	exit 0
+}
+
+# Creates a container (bucket)
 function cb_create {
 	name=$1
 	size=$2
 
-	echo $name $size	
-
 	echo "Creating key"
 	key=$(dd if=/dev/urandom count=4 status=none | base64)
-	echo $?
 
 	echo "Creating container"
 	dd if=/dev/zero of=$name.img bs=1 seek=$size count=0 status=none
-	echo $?
 	echo -n $key | sudo cryptsetup luksFormat $name.img
 
 	echo "Creating filesystem on container"
 	echo -n $key | sudo cryptsetup luksOpen $name.img $name
-	echo $?
 	sudo mkfs.ext4 /dev/mapper/$name
 
 	echo "Encryping key"
@@ -54,6 +60,7 @@ function cb_create {
 	esac
 }
 
+# Mounts a container (bucket)
 function cb_mount {
 	name=$1
 	mount_point="${2/#\~/$HOME}"
@@ -63,6 +70,7 @@ function cb_mount {
 	sudo mount -t ext4 /dev/mapper/$name $mount_point
 }
 
+# Unmounts a container
 function cb_unmount {
 	name=$1
 	mount_point="${2/#\~/$HOME}"
@@ -70,7 +78,10 @@ function cb_unmount {
 	sudo cryptsetup luksClose $name
 }
 
+# Lists buckets; planned to be stored according to the XDG Specification
 function cb_list {
+	# Should list opened buckets, available buckets, and mounted buckets
+	# available is defined as unmounted AND closed
 	echo ""
 }
 
@@ -80,6 +91,7 @@ cmd=$1
 # Shift to pop the first arg, the command. Everything after should be options
 shift
 
+# Do stuff based on the command
 case $cmd in
 
 	help | -h | --help)
@@ -93,6 +105,9 @@ case $cmd in
 		;;
 	unmount | -u | --unmount | umount | --umount)
 		cb_unmount "$@"
+		;;
+	version | --version)
+		print_version
 		;;
 	*)
 		print_usage 1
