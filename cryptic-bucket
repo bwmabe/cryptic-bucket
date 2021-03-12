@@ -6,20 +6,19 @@ enc="sudo openssl aes-256-cbc -pbkdf2 "
 
 function print_usage {
 	echo "USAGE: cryptic-bucket [COMMAND] [OPTIONS]"
-	echo "	create BUCKET_NAME SIZE [FS_TYPE] : Makes a bucket"
-	echo "	mount BUCKET_NAME MOUNTPOINT : Mounts a bucket"
-	echo "	unmount BUCKET_NAME          : unmounts a bucket"
-	echo "	list                         : Lists buckets"
-	echo "	help                         : prints this"
+	echo "	create BUCKET_NAME SIZE        : Makes a bucket"
+	echo "	mount BUCKET_NAME MOUNTPOINT   : Mounts a bucket"
+	echo "	unmount BUCKET_NAME MOUNTPOINT : unmounts a bucket"
+	echo "	list                           : Lists buckets"
+	echo "	help                           : prints this"
 	exit $1
 }	
 
 function cb_create {
 	name=$1
 	size=$2
-	fs_type=$3
 
-	echo $name $size $fs_type	
+	echo $name $size	
 
 	echo "Creating key"
 	key=$(dd if=/dev/urandom count=4 status=none | base64)
@@ -33,7 +32,7 @@ function cb_create {
 	echo "Creating filesystem on container"
 	echo -n $key | sudo cryptsetup luksOpen $name.img $name
 	echo $?
-	sudo mkfs.$fs_type /dev/mapper/$name
+	sudo mkfs.ext4 /dev/mapper/$name
 
 	echo "Encryping key"
 	echo -n $key | $enc -out $name.key.enc
@@ -43,8 +42,9 @@ function cb_create {
 	case $yn in
 		y | Y | yes |YES)
 			echo -n "Mount '$name' where? (mount point): "
-			read mount_point 
-			cb_mount $name $mount_point
+			read mount_point 			
+			mount_point="${mount_point/#\~/$HOME}"
+			sudo mount /dev/mapper/$name $mount_point
 			exit 0
 			;;
 		*)
@@ -56,16 +56,16 @@ function cb_create {
 
 function cb_mount {
 	name=$1
-	mount_point=$2
+	mount_point="${2/#\~/$HOME}"
 
 	echo $name $mount_point
 	$enc -d -in $name.key.enc | sudo cryptsetup luksOpen $name.img $name
-	sudo mount /dev/mapper/$name $mount_point
+	sudo mount -t ext4 /dev/mapper/$name $mount_point
 }
 
 function cb_unmount {
 	name=$1
-	mount_point=$2
+	mount_point="${2/#\~/$HOME}"
 	sudo umount $mount_point
 	sudo cryptsetup luksClose $name
 }
@@ -87,6 +87,12 @@ case $cmd in
 		;;
 	create | -c | --create)
 		cb_create "$@"
+		;;
+	mount | -m | --mount)
+		cb_mount "$@"
+		;;
+	unmount | -u | --unmount | umount | --umount)
+		cb_unmount "$@"
 		;;
 	*)
 		print_usage 1
