@@ -2,6 +2,8 @@
 # (c) 2021 bwmabe
 # FILENAME: cryptic-bucket
 
+enc="sudo openssl aes-256-cbc -pbkdf2 "
+
 function print_usage {
 	echo "USAGE: cryptic-bucket [COMMAND] [OPTIONS]"
 	echo "	create BUCKET_NAME SIZE [FS_TYPE] : Makes a bucket"
@@ -20,21 +22,36 @@ function cb_create {
 	echo $name $size $fs_type	
 
 	echo "Creating key"
-	dd if=/dev/urandom of=$name.key bs=1024 count=4
-		
+	key=$(dd if=/dev/urandom count=4 status=none | base64)
+	echo $?
+
 	echo "Creating container"
-	dd if=/dev/zero of=$name.img bs=1 seek=$size count=0
-	sudo cryptsetup luksFormat $name.img $name.key
+	dd if=/dev/zero of=$name.img bs=1 seek=$size count=0 status=none
+	echo $?
+	echo -n $key | sudo cryptsetup luksFormat $name.img
 
 	echo "Creating filesystem on container"
-	sudo cryptsetup luksOpen $name.img $name --key-file $name.key
+	echo -n $key | sudo cryptsetup luksOpen $name.img $name
+	echo $?
 	sudo mkfs.$fs_type /dev/mapper/$name
 
 	echo "Encryping key"
-	openssl aes-256-cbc -pbkdf2 -in $name.key -out $name.key.enc
+	echo -n $key | $enc -out $name.key.enc
 
-	echo "Deleting unencrypted key"
-	rm $name.key
+	echo -n "Mount the new bucket? (y/n): "
+	read yn 
+	case $yn in
+		y | Y | yes |YES)
+			echo -n "Mount '$name' where? (mount point): "
+			read mount_point 
+			cb_mount $name $mount_point
+			exit 0
+			;;
+		*)
+			sudo cryptsetup luksClose $name
+			exit 0
+			;;
+	esac
 }
 
 function cb_mount {
@@ -42,10 +59,15 @@ function cb_mount {
 	mount_point=$2
 
 	echo $name $mount_point
+	$enc -d -in $name.key.enc | sudo cryptsetup luksOpen $name.img $name
+	sudo mount /dev/mapper/$name $mount_point
 }
 
 function cb_unmount {
-	echo ""
+	name=$1
+	mount_point=$2
+	sudo umount $mount_point
+	sudo cryptsetup luksClose $name
 }
 
 function cb_list {
