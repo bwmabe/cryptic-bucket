@@ -54,6 +54,4 @@ encrypted_keyfile -> gpg -> keyfile -> unlocked bucket, ready to be mounted!
 
 ### References
 
-The main logic of the program is adapted and heavily modified from the algorithm in [this article that came up when I Googled how to make an encrypted container that I have to Google every time.]()
-
-
+The main logic of the program is adapted and heavily modified from the algorithm in [this article that came up when I Googled how to make an encrypted container that I have to Google every time.](https://willhaley.com/blog/encrypted-file-container-disk-image-in-linux/)
